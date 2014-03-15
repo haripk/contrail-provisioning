@@ -259,6 +259,9 @@ class Setup(object):
         parser.add_argument("--storage-disk-config", help = "Disk list to be used for distrubuted storage", nargs="+", type=str)
         parser.add_argument("--storage-directory-config", help = "Directories to be sued for distributed storage", nargs="+", type=str)
         parser.add_argument("--live-migration", help = "Live migration enabled")
+        parser.add_argument("--vmware", help = "Vmware ESXI IP", type=str)
+        parser.add_argument("--vmware_username", help = "Vmware ESXI Username", type=str)
+        parser.add_argument("--vmware_passwd", help = "Vmware ESXI Password", type=str)
     
         self._args = parser.parse_args(remaining_argv)
 
@@ -425,6 +428,22 @@ class Setup(object):
                 print "Skipping interface %s" % i
         raise RuntimeError, '%s not configured, rerun w/ --physical_interface' % ip
     #end get_device_by_ip
+
+    def get_secondary_device(self, primary):
+        for i in netifaces.interfaces ():
+            try:
+                if i == 'pkt1':
+                    continue
+                if i == primary:
+                    continue
+                if i == 'vhost0':
+                    continue
+                if not netifaces.ifaddresses (i).has_key (netifaces.AF_INET):
+                    return i
+            except ValueError,e:
+                print "Skipping interface %s" % i
+        raise RuntimeError, '%s not configured, rerun w/ --physical_interface' % ip
+    #end get_secondary_device
     
     def _is_string_in_file(self, string, filename):
         f_lines=[]
@@ -539,7 +558,11 @@ HWADDR=%s
         local("echo '' >> %s" %(temp_intf_file))
         local("echo 'auto vhost0' >> %s" %(temp_intf_file))
         local("echo 'iface vhost0 inet static' >> %s" %(temp_intf_file))
-        local("echo '    pre-up /opt/contrail/bin/if-vhost0' >> %s" %(temp_intf_file))
+        local("echo '    pre-up vif --create vhost0 --mac %s' >> %s" %(mac, temp_intf_file))
+        local("echo '    pre-up vif --add vhost0 --mac %s --vrf 0 --mode x --type vhost' >> %s" \
+                                                       %(mac, temp_intf_file))
+        local("echo '    pre-down /etc/contrail/vif-helper delete vhost0' >> %s" %(temp_intf_file))
+        local("echo '    post-down ip link del vhost0' >> %s" %(temp_intf_file))
         local("echo '    netmask %s' >> %s" %(netmask, temp_intf_file))
         local("echo '    network_name application' >> %s" %(temp_intf_file))
         if vhost_ip:
@@ -765,6 +788,10 @@ HWADDR=%s
             local("echo 'COMPUTE=%s' >> %s/ctrl-details" %(compute_ip, temp_dir_name))
             if 'compute' in self._args.role:
                 local("echo 'CONTROLLER_MGMT=%s' >> %s/ctrl-details" %(self._args.openstack_mgmt_ip, temp_dir_name))
+                if self._args.vmware:
+                    local("echo 'VMWARE_IP=%s' >> %s/ctrl-details" %(self._args.vmware, temp_dir_name))
+                    local("echo 'VMWARE_USERNAME=%s' >> %s/ctrl-details" %(self._args.vmware_username, temp_dir_name))
+                    local("echo 'VMWARE_PASSWD=%s' >> %s/ctrl-details" %(self._args.vmware_passwd, temp_dir_name))
             local("sudo cp %s/ctrl-details /etc/contrail/ctrl-details" %(temp_dir_name))
             local("rm %s/ctrl-details" %(temp_dir_name))
             if os.path.exists("/etc/neutron/neutron.conf"):
@@ -1195,8 +1222,7 @@ HWADDR=%s
                         local("sudo mv %s/default_pmac /etc/contrail/default_pmac" % (temp_dir_name))
                 else:
                     raise KeyError, 'Interface %s Mac %s' % (str (dev), str (mac))
-                netmask = netifaces.ifaddresses (dev)[netifaces.AF_INET][0][
-                                'netmask']
+                netmask = netifaces.ifaddresses (dev)[netifaces.AF_INET][0]['netmask']
                 if multi_net:
                     gateway= non_mgmt_gw
                 else:
@@ -1220,8 +1246,8 @@ HWADDR=%s
                         local("openstack-config --set /etc/nova/nova.conf DEFAULT firewall_driver nova.virt.firewall.NoopFirewallDriver")
                 else:
                     with lcd(temp_dir_name):
-                        local("sudo sed 's/COLLECTOR=.*/COLLECTOR=%s/g;s/dev=.*/dev=%s/g' /etc/contrail/agent_param.tmpl > agent_param.new" %(collector_ip, dev))
-                        local("sudo mv agent_param.new /etc/contrail/agent_param")
+                            local("sudo sed 's/COLLECTOR=.*/COLLECTOR=%s/g;s/dev=.*/dev=%s/g' /etc/contrail/agent_param.tmpl > agent_param.new" %(collector_ip, dev))
+                            local("sudo mv agent_param.new /etc/contrail/agent_param")
                 # set agent conf with control node IPs, first remove old ones
                 agent_tree = ET.parse('/etc/contrail/rpm_agent.conf')
                 agent_root = agent_tree.getroot()
@@ -1245,6 +1271,19 @@ HWADDR=%s
                 pn = ET.Element('name')
                 pn.text = dev
                 ethpt_elem.append(pn)
+
+                if self._args.vmware:
+                    import pdb;pdb.set_trace()
+                    vmware_dev = self.get_secondary_device(dev)
+                    hyper_elem = ET.Element('hypervisor')
+                    hyper_elem.set('mode', 'vmware')
+                    agent_elem.append(hyper_elem)
+                    driver_elem = ET.Element('driver')
+                    driver_elem.text = 'esxi'
+                    hyper_elem.append(driver_elem)
+                    port_elem = ET.Element('port')
+                    port_elem.text = vmware_dev
+                    hyper_elem.append(port_elem)
 
                 if vgw_public_vn_name and vgw_public_subnet:
                     vgw_public_vn_name = vgw_public_vn_name[1:-1].split(';')
@@ -1438,6 +1477,7 @@ SUBCHANNELS=1,2,3
             local("sudo ./contrail_setup_utils/cinder-server-setup.sh")
             local("sudo ./contrail_setup_utils/nova-server-setup.sh")
 
+
         if 'config' in self._args.role:
             openstack_ip = self._args.openstack_ip
             quantum_ip = self._args.cfgm_ip
@@ -1468,7 +1508,8 @@ SUBCHANNELS=1,2,3
             # running compute-server-setup.sh on cfgm sets nova.conf's
             # sql access from ip instead of localhost, causing privilege
             # degradation for nova tables
-            local("sudo ./contrail_setup_utils/compute-server-setup.sh")
+            local("sudo ./contrail_setup_utils/compute-server-setup.sh ")
+
 
         if 'webui' in self._args.role:
             local("sudo ./contrail_setup_utils/webui-server-setup.sh")
