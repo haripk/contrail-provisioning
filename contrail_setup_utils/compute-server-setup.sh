@@ -60,6 +60,10 @@ fi
 if [ $VMWARE_IP ]; then
     openstack-config --del /etc/nova/nova.conf DEFAULT compute_driver
     openstack-config --set /etc/nova/nova.conf DEFAULT compute_driver vmwareapi.ContrailESXDriver
+    if [ -f /etc/nova/nova-compute.conf ]; then
+        openstack-config --del /etc/nova/nova-compute.conf DEFAULT compute_driver
+        openstack-config --set /etc/nova/nova-compute.conf DEFAULT compute_driver vmwareapi.ContrailESXDriver
+    fi
 fi
 openstack-config --set /etc/nova/nova.conf DEFAULT ec2_private_dns_show_ip False
 openstack-config --set /etc/nova/nova.conf DEFAULT novncproxy_base_url http://$CONTROLLER_MGMT:5999/vnc_auto.html

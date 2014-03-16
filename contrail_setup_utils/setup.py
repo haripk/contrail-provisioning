@@ -1273,7 +1273,6 @@ HWADDR=%s
                 ethpt_elem.append(pn)
 
                 if self._args.vmware:
-                    import pdb;pdb.set_trace()
                     vmware_dev = self.get_secondary_device(dev)
                     hyper_elem = ET.Element('hypervisor')
                     hyper_elem.set('mode', 'vmware')
