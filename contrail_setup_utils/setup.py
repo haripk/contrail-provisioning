@@ -1246,6 +1246,7 @@ HWADDR=%s
                         local("openstack-config --set /etc/nova/nova.conf DEFAULT firewall_driver nova.virt.firewall.NoopFirewallDriver")
                 else:
                     with lcd(temp_dir_name):
+                        if pdist == 'centos' or pdist == 'fedora':
                             local("sudo sed 's/COLLECTOR=.*/COLLECTOR=%s/g;s/dev=.*/dev=%s/g' /etc/contrail/agent_param.tmpl > agent_param.new" %(collector_ip, dev))
                             local("sudo mv agent_param.new /etc/contrail/agent_param")
                 # set agent conf with control node IPs, first remove old ones
