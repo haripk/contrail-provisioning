@@ -259,6 +259,10 @@ class Setup(object):
         parser.add_argument("--storage-disk-config", help = "Disk list to be used for distrubuted storage", nargs="+", type=str)
         parser.add_argument("--storage-directory-config", help = "Directories to be sued for distributed storage", nargs="+", type=str)
         parser.add_argument("--live-migration", help = "Live migration enabled")
+        parser.add_argument("--vmware", help = "Vmware ESXI IP", type=str)
+        parser.add_argument("--vmware_username", help = "Vmware ESXI Username", type=str)
+        parser.add_argument("--vmware_passwd", help = "Vmware ESXI Password", type=str)
+
     
         self._args = parser.parse_args(remaining_argv)
 
@@ -425,6 +429,22 @@ class Setup(object):
                 print "Skipping interface %s" % i
         raise RuntimeError, '%s not configured, rerun w/ --physical_interface' % ip
     #end get_device_by_ip
+    def get_secondary_device(self, primary):
+        for i in netifaces.interfaces ():
+            try:
+                if i == 'pkt1':
+                    continue
+                if i == primary:
+                    continue
+                if i == 'vhost0':
+                    continue
+                if not netifaces.ifaddresses (i).has_key (netifaces.AF_INET):
+                    return i
+            except ValueError,e:
+                print "Skipping interface %s" % i
+        raise RuntimeError, '%s not configured, rerun w/ --physical_interface' % ip
+    #end get_secondary_device
+
     
     def _is_string_in_file(self, string, filename):
         f_lines=[]
@@ -770,6 +790,11 @@ HWADDR=%s
             local("echo 'COMPUTE=%s' >> %s/ctrl-details" %(compute_ip, temp_dir_name))
             if 'compute' in self._args.role:
                 local("echo 'CONTROLLER_MGMT=%s' >> %s/ctrl-details" %(self._args.openstack_mgmt_ip, temp_dir_name))
+                if self._args.vmware:
+                    local("echo 'VMWARE_IP=%s' >> %s/ctrl-details" %(self._args.vmware, temp_dir_name))
+                    local("echo 'VMWARE_USERNAME=%s' >> %s/ctrl-details" %(self._args.vmware_username, temp_dir_name))
+                    local("echo 'VMWARE_PASSWD=%s' >> %s/ctrl-details" %(self._args.vmware_passwd, temp_dir_name))
+
             local("sudo cp %s/ctrl-details /etc/contrail/ctrl-details" %(temp_dir_name))
             local("rm %s/ctrl-details" %(temp_dir_name))
             if os.path.exists("/etc/neutron/neutron.conf"):
@@ -1263,6 +1288,19 @@ HWADDR=%s
                 pn = ET.Element('name')
                 pn.text = dev
                 ethpt_elem.append(pn)
+
+                if self._args.vmware:
+                    vmware_dev = self.get_secondary_device(dev)
+                    hyper_elem = ET.Element('hypervisor')
+                    hyper_elem.set('mode', 'vmware')
+                    agent_elem.append(hyper_elem)
+                    driver_elem = ET.Element('driver')
+                    driver_elem.text = 'esxi'
+                    hyper_elem.append(driver_elem)
+                    port_elem = ET.Element('port')
+                    port_elem.text = vmware_dev
+                    hyper_elem.append(port_elem)
+
 
                 if vgw_public_vn_name and vgw_public_subnet:
                     vgw_public_vn_name = vgw_public_vn_name[1:-1].split(';')
