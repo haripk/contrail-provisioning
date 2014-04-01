@@ -34,6 +34,7 @@ class SetupVncVrouter(object):
             vmware_ip = self._args.vmware
             vmware_username = self._args.vmware_username
             vmware_passwd = self._args.vmware_passwd
+            vmware_vmpg_vswitch = self._args.vmware_vmpg_vswitch
 
 
         setup_args_str = "--role compute --compute_ip %s " %(self._args.self_ip)
@@ -55,7 +56,7 @@ class SetupVncVrouter(object):
         if self._args.haproxy:
             setup_args_str = setup_args_str + " --haproxy"
         if self._args.vmware:
-            setup_args_str = setup_args_str + " --vmware %s --vmware_username %s --vmware_passwd %s " %(vmware_ip, vmware_username, vmware_passwd)
+            setup_args_str = setup_args_str + " --vmware %s --vmware_username %s --vmware_passwd %s --vmware_vmpg_vswitch %s" %(vmware_ip, vmware_username, vmware_passwd, vmware_vmpg_vswitch)
 
 
         setup_obj = Setup(setup_args_str)
@@ -96,6 +97,7 @@ class SetupVncVrouter(object):
             'vmware': None,
             'vmware_username': 'root',
             'vmware_passwd': 'c0ntrail123',
+            'vmware_vmpg_vswitch': 'c0ntrail123',
 
         }
 
@@ -134,6 +136,7 @@ class SetupVncVrouter(object):
         parser.add_argument("--vmware", help = "The Vmware ESXI IP")
         parser.add_argument("--vmware_username", help = "The Vmware ESXI username")
         parser.add_argument("--vmware_passwd", help = "The Vmware ESXI password")
+        parser.add_argument("--vmware_vmpg_vswitch", help = "The Vmware VMPG vswitch name")
 
 
         self._args = parser.parse_args(remaining_argv)

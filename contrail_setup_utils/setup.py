@@ -262,6 +262,7 @@ class Setup(object):
         parser.add_argument("--vmware", help = "Vmware ESXI IP", type=str)
         parser.add_argument("--vmware_username", help = "Vmware ESXI Username", type=str)
         parser.add_argument("--vmware_passwd", help = "Vmware ESXI Password", type=str)
+        parser.add_argument("--vmware_vmpg_vswitch", help = "Vmware VMPG vswitch name", type=str)
 
     
         self._args = parser.parse_args(remaining_argv)
@@ -794,6 +795,7 @@ HWADDR=%s
                     local("echo 'VMWARE_IP=%s' >> %s/ctrl-details" %(self._args.vmware, temp_dir_name))
                     local("echo 'VMWARE_USERNAME=%s' >> %s/ctrl-details" %(self._args.vmware_username, temp_dir_name))
                     local("echo 'VMWARE_PASSWD=%s' >> %s/ctrl-details" %(self._args.vmware_passwd, temp_dir_name))
+                    local("echo 'VMWARE_VMPG_VSWITCH=%s' >> %s/ctrl-details" %(self._args.vmware_vmpg_vswitch, temp_dir_name))
 
             local("sudo cp %s/ctrl-details /etc/contrail/ctrl-details" %(temp_dir_name))
             local("rm %s/ctrl-details" %(temp_dir_name))

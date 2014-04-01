@@ -89,6 +89,7 @@ if [ $VMWARE_IP ]; then
     openstack-config --set /etc/nova/nova.conf vmware host_ip $VMWARE_IP
     openstack-config --set /etc/nova/nova.conf vmware host_username $VMWARE_USERNAME
     openstack-config --set /etc/nova/nova.conf vmware host_password $VMWARE_PASSWD
+    openstack-config --set /etc/nova/nova.conf vmware vmpg_vswitch $VMWARE_VMPG_VSWITCH
 fi
 
 
