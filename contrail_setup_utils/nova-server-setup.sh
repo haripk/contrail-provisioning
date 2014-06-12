@@ -129,11 +129,16 @@ export OS_AUTH_URL=${AUTH_PROTOCOL}://$CONTROLLER:5000/v2.0/
 export OS_NO_CACHE=1
 EOF
 
+OPENSTACK_INDEX=${OPENSTACK_INDEX:-0}
+OPENSTACK_VIP=${OPENSTACK_VIP:-none}
 # must set SQL connection before running nova-manage
-openstack-config --set /etc/nova/nova.conf DEFAULT sql_connection mysql://nova:nova@127.0.0.1/nova
+openstack-config --set /etc/nova/nova.conf DEFAULT sql_connection mysql://nova:nova@$CONTROLLER:33306/nova
 
 for APP in nova; do
-  openstack-db -y --init --service $APP --rootpw "$MYSQL_TOKEN"
+    # Required only in first openstack node, as the mysql db is replicated using galera.
+    if [ "$OPENSTACK_INDEX" -eq 1 ]; then
+        openstack-db -y --init --service $APP --rootpw "$MYSQL_TOKEN"
+    fi
 done
 
 export ADMIN_TOKEN
@@ -184,6 +189,19 @@ if [ $is_ubuntu -eq 1 ] ; then
         openstack-config --set /etc/nova/nova.conf DEFAULT network_api_class nova.network.neutronv2.api.API
     fi
     openstack-config --set /etc/nova/nova.conf DEFAULT ec2_private_dns_show_ip False
+fi
+
+if [ "$OPENSTACK_VIP" != "none" ]; then
+    openstack-config --set /etc/nova/nova.conf DEFAULT osapi_compute_listen_port 9774
+    openstack-config --set /etc/nova/nova.conf DEFAULT metadata_listen_port 9775
+    openstack-config --set /etc/nova/nova.conf DEFAULT metadata_port 9775
+    openstack-config --set /etc/nova/nova.conf keystone_authtoken auth_host $CONTROLLER
+    openstack-config --set /etc/nova/nova.conf keystone_authtoken auth_port 5000
+    openstack-config --set /etc/nova/nova.conf keystone_authtoken rabbit_host $CONTROLLER
+    openstack-config --set /etc/nova/nova.conf keystone_authtoken rabbit_port 5673
+    openstack-config --set /etc/nova/nova.conf DEFAULT $ADMIN_AUTH_URL http://$CONTROLLER:5000/v2.0/
+    openstack-config --set /etc/nova/nova.conf DEFAULT $OS_URL http://$CONTROLLER:9696/
+    openstack-config --set /etc/nova/nova.conf DEFAULT sql_connection mysql://nova:nova@$CONTROLLER:33306/nova
 fi
 
 echo "======= Enabling the services ======"

@@ -87,8 +87,13 @@ export OS_AUTH_URL=$AUTH_PROTOCOL://$CONTROLLER:5000/v2.0/
 export OS_NO_CACHE=1
 EOF
 
+OPENSTACK_INDEX=${OPENSTACK_INDEX:-0}
+OPENSTACK_VIP=${OPENSTACK_VIP:-none}
 for APP in cinder; do
-  openstack-db -y --init --service $APP --rootpw "$MYSQL_TOKEN"
+    # Required only in first openstack node, as the mysql db is replicated using galera.
+    if [ "$OPENSTACK_INDEX" -eq 1 ]; then
+        openstack-db -y --init --service $APP --rootpw "$MYSQL_TOKEN"
+    fi
 done
 
 export ADMIN_TOKEN
@@ -100,6 +105,12 @@ for svc in cinder; do
     openstack-config --set /etc/$svc/$svc.conf keystone_authtoken admin_user $svc
     openstack-config --set /etc/$svc/$svc.conf keystone_authtoken admin_password $SERVICE_TOKEN
     openstack-config --set /etc/$svc/$svc.conf keystone_authtoken auth_protocol $AUTH_PROTOCOL
+    if [ "$OPENSTACK_VIP" != "none" ]; then
+        openstack-config --set /etc/$svc/$svc.conf keystone_authtoken auth_host $CONTROLLER
+        openstack-config --set /etc/$svc/$svc.conf keystone_authtoken auth_port 5000
+        openstack-config --set /etc/$svc/$svc.conf DEFAULT osapi_volume_listen_port 9776
+    fi
+>>>>>>> Stashed changes
 done
 
 echo "======= Enabling the services ======"

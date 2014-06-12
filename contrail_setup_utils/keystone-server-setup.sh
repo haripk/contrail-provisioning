@@ -97,8 +97,13 @@ export SERVICE_TOKEN=$SERVICE_PASSWORD
 export OS_SERVICE_ENDPOINT=$SERVICE_ENDPOINT
 EOF
 
+OPENSTACK_INDEX=${OPENSTACK_INDEX:-0}
+OPENSTACK_VIP=${OPENSTACK_VIP:-none}
 for APP in keystone; do
-  openstack-db -y --init --service $APP --rootpw "$MYSQL_TOKEN"
+    # Required only in first openstack node, as the mysql db is replicated using galera.
+    if [ "$OPENSTACK_INDEX" -eq 1 ]; then
+        openstack-db -y --init --service $APP --rootpw "$MYSQL_TOKEN"
+    fi
 done
 
 # wait for the keystone service to start
@@ -113,7 +118,16 @@ done
 export ADMIN_PASSWORD
 export SERVICE_PASSWORD
 
-(source $CONF_DIR/keystonerc; bash contrail-keystone-setup.sh $CONTROLLER)
+if [ "$OPENSTACK_VIP" != "none" ]; then
+    # Required only in first openstack node, as the mysql db is replicated using galera.
+    if [ "$OPENSTACK_INDEX" -eq 1 ]; then
+        (source $CONF_DIR/keystonerc; bash contrail-ha-keystone-setup.sh $CONTROLLER)
+    fi
+else
+    (source $CONF_DIR/keystonerc; bash contrail-keystone-setup.sh $CONTROLLER)
+fi
+
+# Check if ADMIN/SERVICE Password has been set
 
 # Update all config files with service username and password
 for svc in keystone; do
@@ -127,11 +141,21 @@ for svc in keystone; do
     openstack-config --set /etc/$svc/$svc.conf identity driver keystone.identity.backends.sql.Identity
     openstack-config --set /etc/$svc/$svc.conf token driver keystone.token.backends.memcache.Token
     openstack-config --set /etc/$svc/$svc.conf ec2 driver keystone.contrib.ec2.backends.sql.Ec2
-    openstack-config --set /etc/$svc/$svc.conf DEFAULT onready keystone.common.systemd   
+    openstack-config --set /etc/$svc/$svc.conf DEFAULT onready keystone.common.systemd
     openstack-config --set /etc/$svc/$svc.conf memcache servers 127.0.0.1:11211
 done
 
-keystone-manage db_sync
+# Required only in first openstack node, as the mysql db is replicated using galera.
+if [ "$OPENSTACK_INDEX" -eq 1 ]; then
+    keystone-manage db_sync
+fi
+
+if [ "$OPENSTACK_VIP" != "none" ]; then
+    # Openstack HA specific config
+    openstack-config --set /etc/keystone/keystone.conf sql connection mysql://keystone:keystone@$CONTROLLER:33306/keystone
+    openstack-config --set /etc/keystone/keystone.conf token driver keystone.token.backends.sql.Token
+    openstack-config --del /etc/keystone/keystone.conf memcache servers
+fi
 
 # Increase memcached 'item_size_max' to 2MB, default is 1MB
 # Work around for bug https://bugs.launchpad.net/keystone/+bug/1242620
