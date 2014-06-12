@@ -17,6 +17,7 @@ class SetupVncCfgm(object):
         self._parse_args(args_str)
         self_ip = self._args.self_ip
         keystone_ip = self._args.keystone_ip
+        openstack_vip = self._args.openstack_vip
         collector_ip = self._args.collector_ip
         quantum_port = self._args.quantum_port
         nworkers = self._args.nworkers
@@ -51,6 +52,8 @@ class SetupVncCfgm(object):
                              %(' '.join(self._args.zookeeper_ip_list))    
         if self._args.haproxy:
             setup_args_str = setup_args_str + " --haproxy"
+        if openstack_vip:
+            setup_args_str = setup_args_str + " --openstack_vip %s " %(openstack_vip)
         setup_obj = Setup(setup_args_str)
         setup_obj.do_setup()
         setup_obj.run_services()
@@ -64,7 +67,7 @@ class SetupVncCfgm(object):
             --zookeeper_ip_list 10.1.5.11 10.1.5.12
             --nworkers 1
             optional: --use_certs, --multi_tenancy --haproxy
-                      --region_name <name>
+                      --region_name <name> --openstack_vip 10.1.5.100
         '''
 
         # Source any specified config/ini file
@@ -138,6 +141,7 @@ class SetupVncCfgm(object):
             default = '1')
         parser.add_argument("--haproxy", help = "Enable haproxy", action="store_true")
         parser.add_argument("--region_name", help = "The Region name for the openstack")
+        parser.add_argument("--openstack_vip", help = "VIP Address of openstack  nodes")
   
         self._args = parser.parse_args(remaining_argv)
 

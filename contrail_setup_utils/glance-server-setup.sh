@@ -87,8 +87,13 @@ export OS_AUTH_URL=http://$CONTROLLER:5000/v2.0/
 export OS_NO_CACHE=1
 EOF
 
+OPENSTACK_INDEX=${OPENSTACK_INDEX:-0}
+OPENSTACK_VIP=${OPENSTACK_VIP:-none}
 for APP in glance; do
-  openstack-db -y --init --service $APP --rootpw "$MYSQL_TOKEN"
+    # Required only in first openstack node, as the mysql db is replicated using galera.
+    if [ "$OPENSTACK_INDEX" -eq 1 ]; then
+        openstack-db -y --init --service $APP --rootpw "$MYSQL_TOKEN"
+    fi
 done
 
 export ADMIN_TOKEN
@@ -103,7 +108,19 @@ for cfg in api registry; do
     openstack-config --set /etc/glance/glance-$cfg.conf keystone_authtoken admin_user glance
     openstack-config --set /etc/glance/glance-$cfg.conf keystone_authtoken admin_password $SERVICE_TOKEN
     openstack-config --set /etc/glance/glance-$cfg.conf paste_deploy flavor keystone
+    if [ "$OPENSTACK_VIP" != "none" ]; then
+        openstack-config --set /etc/glance/glance-$cfg.conf keystone_authtoken auth_host $CONTROLLER
+        openstack-config --set /etc/glance/glance-$cfg.conf keystone_authtoken auth_port 5000
+    fi
 done
+if [ "$OPENSTACK_VIP" != "none" ]; then
+    # Openstack HA specific config
+    openstack-config --set /etc/glance/glance-api.conf DEFAULT bind_port 9393
+    openstack-config --set /etc/glance/glance-api.conf DEFAULT sql_connection mysql://glance:glance@$CONTROLLER:33306/glance
+    openstack-config --set /etc/glance/glance-api.conf DEFAULT rabbit_host $CONTROLLER
+    openstack-config --set /etc/glance/glance-api.conf DEFAULT rabbit_port 5673
+    openstack-config --set /etc/glance/glance-api.conf DEFAULT swift_store_auth_address $CONTROLLER:5000/v2.0/
+fi
 
 echo "======= Enabling the services ======"
 

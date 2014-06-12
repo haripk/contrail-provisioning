@@ -83,6 +83,7 @@ from contrail_config_templates import ifmap_basicauthusers_template
 from contrail_config_templates import ifmap_authorization_template
 from contrail_config_templates import ifmap_publisher_template
 from contrail_config_templates import ifmap_log4j_template
+from contrail_config_templates import keepalived_conf_template
 
 CONTRAIL_FEDORA_TEMPL = string.Template("""
 [contrail_fedora_repo]
@@ -162,6 +163,7 @@ class Setup(object):
             'ks_auth_protocol':'http',
             'amqp_server_ip': '127.0.0.1',
             'quantum_service_protocol':'http',
+            'openstack_vip' : None,
         }
         control_node_defaults = {
             'cfgm_ip': '127.0.0.1',
@@ -231,6 +233,7 @@ class Setup(object):
                             help = "Role of server (config, openstack, control, compute, collector, webui, database")
         parser.add_argument("--cfgm_ip", help = "IP Address of Configuration Node")
         parser.add_argument("--openstack_ip", help = "IP Address of Openstack Node")
+        parser.add_argument("--openstack_vip", help = "VIP Address of HA Openstack Nodess")
         parser.add_argument("--keystone_ip", help = "IP Address of Keystone Node")
         parser.add_argument("--openstack_mgmt_ip", help = "Management IP Address of Openstack Node")
         parser.add_argument("--collector_ip", help = "IP Address of Collector Node")
@@ -262,6 +265,8 @@ class Setup(object):
         parser.add_argument("--cassandra_ip_list", help = "IP Addresses of Cassandra Nodes", nargs = '+', type = str)
         parser.add_argument("--zookeeper_ip_list", help = "IP Addresses of Zookeeper servers", nargs = '+', type = str)
         parser.add_argument("--database_index", help = "Index of this cfgm node")
+        parser.add_argument("--galera_ip_list", help = "IP Addresses of Galera servers", nargs = '+', type = str)
+        parser.add_argument("--openstack_index", help = "Index of this openstack node", type = int)
         parser.add_argument("--quantum_port", help = "Quantum server port", default='9696')
         parser.add_argument("--n_api_workers",
             help="Number of API/discovery worker processes to be launched",
@@ -843,7 +848,6 @@ HWADDR=%s
                 local("sudo sed -i 's/admin_user = /;admin_user = /' /etc/cinder/api-paste.ini")
                 local("sudo sed -i 's/admin_password = /;admin_password = /' /etc/cinder/api-paste.ini")
 
-
         if 'compute' in self._args.role or 'openstack' in self._args.role:
             with settings(warn_only = True):
                 local("echo 'rabbit_host = %s' >> /etc/nova/nova.conf" %(self._args.amqp_server_ip))
@@ -902,6 +906,10 @@ HWADDR=%s
                     local("echo 'VMWARE_PASSWD=%s' >> %s/ctrl-details" %(self._args.vmware_passwd, temp_dir_name))
                     local("echo 'VMWARE_VMPG_VSWITCH=%s' >> %s/ctrl-details" %(self._args.vmware_vmpg_vswitch, temp_dir_name))
 
+            if self._args.openstack_vip:
+                local("echo 'OPENSTACK_VIP=%s' >> %s/ctrl-details" % (self._args.openstack_vip, temp_dir_name))
+            if self._args.openstack_index:
+                local("echo 'OPENSTACK_INDEX=%s' >> %s/ctrl-details" % (self._args.openstack_index, temp_dir_name))
             local("sudo cp %s/ctrl-details /etc/contrail/ctrl-details" %(temp_dir_name))
             local("rm %s/ctrl-details" %(temp_dir_name))
             if os.path.exists("/etc/neutron/neutron.conf"):
@@ -1629,7 +1637,12 @@ SUBCHANNELS=1,2,3
         if 'config' in self._args.role:
             keystone_ip = self._args.keystone_ip
             region_name = self._args.region_name
-            quantum_ip = self._args.cfgm_ip
+            if self._args.openstack_vip:
+                # Assumption cfgm and openstack in same node.
+                # TO DO: When we introduce contrail_vip for cfgm nodes, this needs to be revisited.
+                quantum_ip = self._args.openstack_vip
+            else:
+                quantum_ip = self._args.cfgm_ip
             local("sudo ./contrail_setup_utils/config-server-setup.sh")
             local("sudo ./contrail_setup_utils/quantum-server-setup.sh")
             quant_args = "--ks_server_ip %s --quant_server_ip %s --tenant %s --user %s --password %s --svc_password %s --root_password %s" \
@@ -1722,6 +1735,128 @@ SUBCHANNELS=1,2,3
     #end run_services
 
 #end class Setup
+
+
+class KeepalivedSetup(Setup):
+    def fixup_config_files(self):
+        # keepalived.conf
+        device = self.get_device_by_ip(self._args.openstack_ip)
+        netmask = netifaces.ifaddresses(device)[netifaces.AF_INET][0]['netmask']
+        prefix = netaddr.IPNetwork('%s/%s' % (self._args.openstack_ip, netmask)).prefixlen
+        state = 'BACKUP'
+        priority = '100'
+        if self._args.openstack_index == 1:
+            state = 'MASTER'
+            priority = '101'
+
+        template_vals = {'__device__': device,
+                         '__state__' : state,
+                         '__priority__' : priority,
+                         '__virtual_ip__' : self._args.openstack_vip,
+                         '__virtual_ip_mask__' : prefix,
+                        }
+        self._template_substitute_write(keepalived_conf_template.template,
+                                        template_vals, self._temp_dir_name + '/keepalived.conf')
+        local("sudo mv %s/keepalived.conf /etc/keepalived/" %(self._temp_dir_name))
+
+    def run_services(self):
+        local("service keepalived restart")
+
+
+class OpenstackGaleraSetup(Setup):
+    def fixup_config_files(self):
+        pdist = platform.dist()[0]
+        if pdist in ['Ubuntu']:
+            local("ln -sf /bin/true /sbin/chkconfig")
+            self.mysql_conf = '/etc/mysql/my.cnf'
+            wsrep_conf = '/etc/mysql/conf.d/wsrep.cnf'
+            self.mysql_svc = 'mysql'
+        elif pdist in ['centos']:
+            self.mysql_conf = '/etc/my.cnf'
+            wsrep_conf = self.mysql_conf
+            self.mysql_svc = 'mysqld'
+        self.mysql_token_file = '/etc/contrail/mysql.token'
+
+        self.install_mysql_db()
+        if self._args.openstack_index == 1:
+            self.create_mysql_token_file()
+        else:
+            self.get_mysql_token_file()
+        self.set_mysql_root_password()
+        self.setup_grants()
+
+        # fixup wsrep config
+        local('sed -i -e "s/bind-address/#bind-address/" %s' % self.mysql_conf)
+        if self._args.openstack_index == 1:
+            local('sed -ibak "s#\#wsrep_cluster_address=.*#wsrep_cluster_address=gcomm://#g" %s' % (wsrep_conf))
+        else:
+            local('sed -ibak "s#\#wsrep_cluster_address=.*#wsrep_cluster_address=gcomm://%s#g" %s' %
+                  (','.join(self._args.galera_ip_list), wsrep_conf))
+        local('sed -ibak "s#wsrep_sst_auth=.*#wsrep_sst_auth=root:%s#g" %s' % (self.mysql_token, wsrep_conf))
+        local('sed  -ibak  "s#\#wsrep_node_address=.*#wsrep_node_address=%s#g" %s' % (self._args.openstack_ip, wsrep_conf))
+        local('sed  -i -e "s#wsrep_provider=.*#wsrep_provider=/usr/lib/galera/libgalera_smm.so#g" %s' % wsrep_conf)
+
+    def install_mysql_db(self):
+        local('chkconfig %s on' % self.mysql_svc)
+        local('chown -R mysql:mysql /var/lib/mysql/')
+        with settings(warn_only=True):
+            install_db = local("service %s restart" % self.mysql_svc).failed
+        if install_db:
+            local('mysql_install_db --user=mysql --ldata=/var/lib/mysql')
+            local("service %s restart" % self.mysql_svc)
+
+    def create_mysql_token_file(self):
+        # Use MYSQL_ROOT_PW from the environment or generate a new password
+        if os.path.isfile(self.mysql_token_file):
+            self.mysql_token = local('cat %s' % self.mysql_token_file, capture=True).strip()
+        else:
+            if os.environ.get('MYSQL_ROOT_PW'):
+                self.mysql_token = os.environ.get('MYSQL_ROOT_PW')
+            else:
+                 self.mysql_token = local('openssl rand -hex 10', capture=True).strip()
+            local("echo %s > %s" % (self.mysql_token, self.mysql_token_file))
+            local("chmod 400 %s" % self.mysql_token_file)
+
+    def get_mysql_token_file(self):
+        retries = 5
+        if not os.path.isfile(self.mysql_token_file):
+            while retries:
+                with settings(host_string = 'root@%s' % (self._args.galera_ip_list[0]),
+                              password=env.password, warn_only=True):
+                    if get('%s' % self.mysql_token_file, '/etc/contrail/').failed:
+                        time.sleep(1)
+                        retries -= 1
+                        print " Retry(%s) to get the %s." % ((5 - retries), self.mysql_token_file)
+                    else:
+                        break
+        self.mysql_token = local('cat %s' % self.mysql_token_file, capture=True).strip()
+
+    def set_mysql_root_password(self):
+        # Set root password for mysql
+        with settings(warn_only=True):
+            if local('echo show databases |mysql -u root > /dev/null').succeeded:
+                local('mysqladmin password %s' % self.mysql_token)
+            elif local('echo show databases |mysql -u root -p%s> /dev/null' % self.mysql_token).succeeded:
+                print "Mysql root password is already set to '%s'" % self.mysql_token
+            else:
+                raise RuntimeError("MySQL root password unknown, reset and retry")
+
+    def setup_grants(self):
+        mysql_cmd =  "mysql --defaults-file=%s -uroot -p%s -e" % (self.mysql_conf, self.mysql_token)
+        host_list = self._args.galera_ip_list + ['localhost', '127.0.0.1']
+        for host in host_list:
+            local('%s "SET WSREP_ON=0;SET SQL_LOG_BIN=0; GRANT ALL ON *.* TO root@%s IDENTIFIED BY \'%s\'"' % 
+                   (mysql_cmd, host, self.mysql_token))
+        local('%s "SET wsrep_on=OFF; DELETE FROM mysql.user WHERE user=\'\'"' % mysql_cmd)
+        local('%s "FLUSH PRIVILEGES"' % mysql_cmd)
+
+    def run_services(self):
+        if self._args.openstack_index == 1:
+            local("service %s restart" % self.mysql_svc)
+        else:
+            time.sleep(3)
+            local("service %s restart" % self.mysql_svc)
+
 
 def main(args_str = None):
     setup_obj = Setup(args_str)
