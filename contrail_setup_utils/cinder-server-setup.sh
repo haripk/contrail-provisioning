@@ -110,7 +110,6 @@ for svc in cinder; do
         openstack-config --set /etc/$svc/$svc.conf keystone_authtoken auth_port 5000
         openstack-config --set /etc/$svc/$svc.conf DEFAULT osapi_volume_listen_port 9776
     fi
->>>>>>> Stashed changes
 done
 
 echo "======= Enabling the services ======"
