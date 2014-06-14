@@ -89,6 +89,12 @@ EOF
 
 OPENSTACK_INDEX=${OPENSTACK_INDEX:-0}
 OPENSTACK_VIP=${OPENSTACK_VIP:-none}
+for cfg in api registry; do
+    if [ "$OPENSTACK_VIP" != "none" ]; then
+        openstack-config --set /etc/glance/glance-$cfg.conf DEFAULT sql_connection mysql://glance:glance@$CONTROLLER:33306/glance
+    fi
+done
+
 for APP in glance; do
     # Required only in first openstack node, as the mysql db is replicated using galera.
     if [ "$OPENSTACK_INDEX" -eq 1 ]; then
@@ -109,7 +115,6 @@ for cfg in api registry; do
     openstack-config --set /etc/glance/glance-$cfg.conf keystone_authtoken admin_password $SERVICE_TOKEN
     openstack-config --set /etc/glance/glance-$cfg.conf paste_deploy flavor keystone
     if [ "$OPENSTACK_VIP" != "none" ]; then
-        openstack-config --set /etc/glance/glance-$cfg.conf DEFAULT sql_connection mysql://glance:glance@$CONTROLLER:33306/glance
         openstack-config --set /etc/glance/glance-$cfg.conf keystone_authtoken auth_host $CONTROLLER
         openstack-config --set /etc/glance/glance-$cfg.conf keystone_authtoken auth_port 5000
     fi

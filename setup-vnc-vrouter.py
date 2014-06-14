@@ -18,6 +18,7 @@ class SetupVncVrouter(object):
 
         cfgm_ip = self._args.cfgm_ip
         keystone_ip = self._args.keystone_ip
+        openstack_vip = self._args.openstack_vip
         service_token = self._args.service_token
         ncontrols = self._args.ncontrols
         non_mgmt_ip = self._args.non_mgmt_ip
@@ -58,6 +59,8 @@ class SetupVncVrouter(object):
                 setup_args_str = setup_args_str + " --vgw_gateway_routes %s " %(vgw_gateway_routes)
         if self._args.haproxy:
             setup_args_str = setup_args_str + " --haproxy"
+        if openstack_vip:
+            setup_args_str = setup_args_str + " --openstack_vip %s " %(openstack_vip)
 
         setup_obj = Setup(setup_args_str)
         setup_obj.do_setup()
@@ -68,7 +71,7 @@ class SetupVncVrouter(object):
         '''
         Eg. python setup-vnc-vrouter.py --cfgm_ip 10.1.5.11 --keystone_ip 10.1.5.12
                    --self_ip 10.1.5.12 --service_token 'c0ntrail123' --ncontrols 1
-                   --haproxy
+                   --haproxy --openstack_vip 10.1.5.200
         '''
 
         # Source any specified config/ini file
@@ -139,6 +142,7 @@ class SetupVncVrouter(object):
             default = 'http')
         parser.add_argument("--amqp_server_ip",
             help = "IP of the AMQP server to be used for openstack")
+        parser.add_argument("--openstack_vip", help = "VIP Address of openstack  nodes")
 
 
         self._args = parser.parse_args(remaining_argv)
