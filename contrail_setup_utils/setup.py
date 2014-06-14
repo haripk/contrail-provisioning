@@ -850,7 +850,7 @@ HWADDR=%s
 
         if 'compute' in self._args.role or 'openstack' in self._args.role:
             with settings(warn_only = True):
-                local("echo 'rabbit_host = %s' >> /etc/nova/nova.conf" %(self._args.amqp_server_ip))
+                local("openstack-config --set /etc/nova/nova.conf DEFAULT rabbit_host %s" % self._args.amqp_server_ip)
 
         if 'compute' in self._args.role:
             with settings(warn_only = True):
@@ -858,7 +858,7 @@ HWADDR=%s
                     cmd = "dpkg -l | grep 'ii' | grep nova-compute | grep -v vif | grep -v nova-compute-kvm | awk '{print $3}'"
                     nova_compute_version = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
                     if (nova_compute_version != "2:2013.1.3-0ubuntu1"):
-                        local("echo 'neutron_admin_auth_url = http://%s:5000/v2.0' >> /etc/nova/nova.conf" %(self._args.keystone_ip))
+                        local("openstack-config --set /etc/nova/nova.conf DEFAULT neutron_admin_auth_url http://%s:5000/v2.0" % self._args.keystone_ip)
 
             if os.path.exists(nova_conf_file):
                 local("sudo sed -i 's/rpc_backend = nova.openstack.common.rpc.impl_qpid/#rpc_backend = nova.openstack.common.rpc.impl_qpid/g' %s" \
