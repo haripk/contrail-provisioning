@@ -173,7 +173,7 @@ fi
 if [[ -n "$ENABLE_ENDPOINTS" ]]; then
     if [ -z $(endpoint_lookup $NOVA_SERVICE) ]; then
     keystone endpoint-create --region RegionOne --service-id $NOVA_SERVICE \
-        --publicurl 'http://localhost:8774/v1.1/$(tenant_id)s' \
+        --publicurl 'http://'$CONTROLLER':8774/v1.1/$(tenant_id)s' \
         --adminurl 'http://localhost:$(compute_port)s/v1.1/$(tenant_id)s' \
         --internalurl 'http://'$CONTROLLER':8774/v1.1/$(tenant_id)s'
     fi
