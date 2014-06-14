@@ -109,6 +109,7 @@ for cfg in api registry; do
     openstack-config --set /etc/glance/glance-$cfg.conf keystone_authtoken admin_password $SERVICE_TOKEN
     openstack-config --set /etc/glance/glance-$cfg.conf paste_deploy flavor keystone
     if [ "$OPENSTACK_VIP" != "none" ]; then
+        openstack-config --set /etc/glance/glance-$cfg.conf DEFAULT sql_connection mysql://glance:glance@$CONTROLLER:33306/glance
         openstack-config --set /etc/glance/glance-$cfg.conf keystone_authtoken auth_host $CONTROLLER
         openstack-config --set /etc/glance/glance-$cfg.conf keystone_authtoken auth_port 5000
     fi
@@ -116,7 +117,6 @@ done
 if [ "$OPENSTACK_VIP" != "none" ]; then
     # Openstack HA specific config
     openstack-config --set /etc/glance/glance-api.conf DEFAULT bind_port 9393
-    openstack-config --set /etc/glance/glance-api.conf DEFAULT sql_connection mysql://glance:glance@$CONTROLLER:33306/glance
     openstack-config --set /etc/glance/glance-api.conf DEFAULT rabbit_host $CONTROLLER
     openstack-config --set /etc/glance/glance-api.conf DEFAULT rabbit_port 5673
     openstack-config --set /etc/glance/glance-api.conf DEFAULT swift_store_auth_address $CONTROLLER:5000/v2.0/
