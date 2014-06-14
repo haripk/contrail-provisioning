@@ -103,6 +103,18 @@ if [ $VMWARE_IP ]; then
     openstack-config --set /etc/nova/nova.conf vmware vmpg_vswitch $VMWARE_VMPG_VSWITCH
 fi
 
+# Openstack HA specific configs
+OPENSTACK_VIP=${OPENSTACK_VIP:-none}
+if [ "$OPENSTACK_VIP" != "none" ]; then
+    openstack-config --set /etc/nova/nova.conf DEFAULT glance_port 9393
+    openstack-config --set /etc/nova/nova.conf keystone_authtoken auth_host $CONTROLLER
+    openstack-config --set /etc/nova/nova.conf keystone_authtoken auth_port 6000
+    openstack-config --set /etc/nova/nova.conf DEFAULT rabbit_host $CONTROLLER
+    openstack-config --set /etc/nova/nova.conf DEFAULT rabbit_port 5673
+    openstack-config --set /etc/nova/nova.conf DEFAULT $ADMIN_AUTH_URL http://$CONTROLLER:6000/v2.0/
+    openstack-config --set /etc/nova/nova.conf DEFAULT $OS_URL http://$CONTROLLER:9696/
+    openstack-config --set /etc/nova/nova.conf DEFAULT sql_connection mysql://nova:nova@$CONTROLLER:33306/nova
+fi
 
 for svc in openstack-nova-compute supervisor-vrouter; do
     chkconfig $svc on
