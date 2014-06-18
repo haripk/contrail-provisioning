@@ -1760,12 +1760,10 @@ class OpenstackGaleraSetup(Setup):
 
         # fixup wsrep config
         local('sed -i -e "s/bind-address/#bind-address/" %s' % self.mysql_conf)
-        #if self._args.openstack_index == 1:
-        #    local('sed -ibak "s#\#wsrep_cluster_address=.*#wsrep_cluster_address=gcomm://#g" %s' % (wsrep_conf))
-        #else:
-        #    local('sed -ibak "s#\#wsrep_cluster_address=.*#wsrep_cluster_address=gcomm://%s:4567#g" %s' %
-        #          (':4567,'.join(self._args.galera_ip_list), wsrep_conf))
-        local('sed -ibak "s#\#wsrep_cluster_address=.*#wsrep_cluster_address=gcomm://%s:4567#g" %s' %
+        if self._args.openstack_index == 1:
+            local('sed -ibak "s#\#wsrep_cluster_address=.*#wsrep_cluster_address=gcomm://#g" %s' % (wsrep_conf))
+        else:
+            local('sed -ibak "s#\#wsrep_cluster_address=.*#wsrep_cluster_address=gcomm://%s:4567#g" %s' %
                   (':4567,'.join(self._args.galera_ip_list), wsrep_conf))
         local('sed -ibak "s#wsrep_sst_auth=.*#wsrep_sst_auth=root:%s#g" %s' % (self.mysql_token, wsrep_conf))
         local('sed -ibak "s#\#wsrep_node_address=.*#wsrep_node_address=%s#g" %s' % (self._args.openstack_ip, wsrep_conf))
@@ -1828,9 +1826,10 @@ class OpenstackGaleraSetup(Setup):
 
     def run_services(self):
         if self._args.openstack_index == 1:
-            local("service %s start wsrep_cluster_address=gcomm://" % self.mysql_svc)
+            local("service %s restart" % self.mysql_svc)
         else:
-            time.sleep(3)
+            # Wait for the first galera node to create new cluster.
+            time.sleep(5)
             local("service %s restart" % self.mysql_svc)
         local("sudo update-rc.d -f mysql remove")
         local("sudo update-rc.d mysql defaults")
