@@ -97,8 +97,8 @@ openstack-config --set /etc/$net_svc_name/$net_svc_name.conf DEFAULT log_format 
 OPENSTACK_VIP=${OPENSTACK_VIP:-none}
 if [ "$OPENSTACK_VIP" != "none" ]; then
     # Openstack HA specific config
-    openstack-config --set /etc/glance/glance-api.conf DEFAULT rabbit_host $CONTROLLER
-    openstack-config --set /etc/glance/glance-api.conf DEFAULT rabbit_port 5673
+    openstack-config --set /etc/$svc/$svc.conf DEFAULT rabbit_host $CONTROLLER
+    openstack-config --set /etc/$svc/$svc.conf DEFAULT rabbit_port 5673
 fi
 
 echo "======= Enabling the services ======"
