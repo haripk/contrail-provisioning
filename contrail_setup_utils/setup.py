@@ -1052,6 +1052,11 @@ HWADDR=%s
             cassandra_server_list = [(cassandra_server_ip, '9160') for cassandra_server_ip in self._args.cassandra_ip_list]
             zk_servers = ','.join(self._args.zookeeper_ip_list)
             zk_servers_ports = ','.join(['%s:2181' %(s) for s in self._args.zookeeper_ip_list])
+            rabbit_host = cfgm_ip
+            rabbit_port = 5672
+            if self._args.openstack_vip:
+                rabbit_host = self._args.openstack_vip
+                rabbit_port = 5673
 
             if pdist == 'Ubuntu':
                 # log4j.properties
@@ -1092,6 +1097,8 @@ HWADDR=%s
                              '__contrail_cacertfile_location__': '/etc/contrail/ssl/certs/ca.pem',
                              '__contrail_multi_tenancy__': self._args.multi_tenancy,
                              '__contrail_keystone_ip__': keystone_ip,
+                             '__rabbit_server_ip__': rabbit_host,
+                             '__rabbit_server_port__': rabbit_port,
                              '__contrail_admin_user__': ks_admin_user,
                              '__contrail_admin_password__': ks_admin_password,
                              '__contrail_admin_tenant_name__': ks_admin_tenant_name,
@@ -1139,7 +1146,7 @@ HWADDR=%s
             local("sudo chmod a+x /etc/init.d/contrail-api")
 
             # quantum plugin
-            template_vals = {'__contrail_api_server_ip__': cfgm_ip,
+            template_vals = {'__contrail_api_server_ip__': self._args.openstack_vip or cfgm_ip,
                              '__contrail_api_server_port__': '8082',
                              '__contrail_multi_tenancy__': self._args.multi_tenancy,
                              '__contrail_keystone_ip__': '127.0.0.1',
@@ -1753,13 +1760,16 @@ class OpenstackGaleraSetup(Setup):
 
         # fixup wsrep config
         local('sed -i -e "s/bind-address/#bind-address/" %s' % self.mysql_conf)
-        if self._args.openstack_index == 1:
-            local('sed -ibak "s#\#wsrep_cluster_address=.*#wsrep_cluster_address=gcomm://#g" %s' % (wsrep_conf))
-        else:
-            local('sed -ibak "s#\#wsrep_cluster_address=.*#wsrep_cluster_address=gcomm://%s#g" %s' %
-                  (','.join(self._args.galera_ip_list), wsrep_conf))
+        #if self._args.openstack_index == 1:
+        #    local('sed -ibak "s#\#wsrep_cluster_address=.*#wsrep_cluster_address=gcomm://#g" %s' % (wsrep_conf))
+        #else:
+        #    local('sed -ibak "s#\#wsrep_cluster_address=.*#wsrep_cluster_address=gcomm://%s:4567#g" %s' %
+        #          (':4567,'.join(self._args.galera_ip_list), wsrep_conf))
+        local('sed -ibak "s#\#wsrep_cluster_address=.*#wsrep_cluster_address=gcomm://%s:4567#g" %s' %
+                  (':4567,'.join(self._args.galera_ip_list), wsrep_conf))
         local('sed -ibak "s#wsrep_sst_auth=.*#wsrep_sst_auth=root:%s#g" %s' % (self.mysql_token, wsrep_conf))
-        local('sed  -ibak  "s#\#wsrep_node_address=.*#wsrep_node_address=%s#g" %s' % (self._args.openstack_ip, wsrep_conf))
+        local('sed -ibak "s#\#wsrep_node_address=.*#wsrep_node_address=%s#g" %s' % (self._args.openstack_ip, wsrep_conf))
+        local('sed -ibak "s#\#wsrep_provider_options=.*#wsrep_provider_options=\"gcache.size=8192M\"#g" %s' % wsrep_conf)
         local('sed  -i -e "s#wsrep_provider=.*#wsrep_provider=/usr/lib/galera/libgalera_smm.so#g" %s' % wsrep_conf)
 
     def install_mysql_db(self):
@@ -1818,10 +1828,12 @@ class OpenstackGaleraSetup(Setup):
 
     def run_services(self):
         if self._args.openstack_index == 1:
-            local("service %s restart" % self.mysql_svc)
+            local("service %s start wsrep_cluster_address=gcomm://" % self.mysql_svc)
         else:
             time.sleep(3)
             local("service %s restart" % self.mysql_svc)
+        local("sudo update-rc.d -f mysql remove")
+        local("sudo update-rc.d mysql defaults")
 
 
 def main(args_str = None):

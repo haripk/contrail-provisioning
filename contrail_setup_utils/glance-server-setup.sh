@@ -99,6 +99,7 @@ for APP in glance; do
     # Required only in first openstack node, as the mysql db is replicated using galera.
     if [ "$OPENSTACK_INDEX" -eq 1 ]; then
         openstack-db -y --init --service $APP --rootpw "$MYSQL_TOKEN"
+        glance-manage db_sync
     fi
 done
 
@@ -125,6 +126,7 @@ if [ "$OPENSTACK_VIP" != "none" ]; then
     openstack-config --set /etc/glance/glance-api.conf DEFAULT rabbit_host $CONTROLLER
     openstack-config --set /etc/glance/glance-api.conf DEFAULT rabbit_port 5673
     openstack-config --set /etc/glance/glance-api.conf DEFAULT swift_store_auth_address $CONTROLLER:5000/v2.0/
+    openstack-config --set /etc/glance/glance-api.conf DEFAULT known_stores glance.store.filesystem.Store,glance.store.rbd.Store,glance.store.swift.Store,glance.store.cinder.Store
 fi
 
 echo "======= Enabling the services ======"
