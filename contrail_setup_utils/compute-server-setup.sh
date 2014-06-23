@@ -108,10 +108,10 @@ OPENSTACK_VIP=${OPENSTACK_VIP:-none}
 if [ "$OPENSTACK_VIP" != "none" ]; then
     openstack-config --set /etc/nova/nova.conf DEFAULT glance_port 9393
     openstack-config --set /etc/nova/nova.conf keystone_authtoken auth_host $CONTROLLER
-    openstack-config --set /etc/nova/nova.conf keystone_authtoken auth_port 6000
+    openstack-config --set /etc/nova/nova.conf keystone_authtoken auth_port 5000
     openstack-config --set /etc/nova/nova.conf DEFAULT rabbit_host $CONTROLLER
     openstack-config --set /etc/nova/nova.conf DEFAULT rabbit_port 5673
-    openstack-config --set /etc/nova/nova.conf DEFAULT $ADMIN_AUTH_URL http://$CONTROLLER:6000/v2.0/
+    openstack-config --set /etc/nova/nova.conf DEFAULT $ADMIN_AUTH_URL http://$CONTROLLER:5000/v2.0/
     openstack-config --set /etc/nova/nova.conf DEFAULT $OS_URL http://$CONTROLLER:9696/
     openstack-config --set /etc/nova/nova.conf DEFAULT sql_connection mysql://nova:nova@$CONTROLLER:33306/nova
     openstack-config --set /etc/nova/nova.conf database idle_timeout 180
