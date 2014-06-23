@@ -114,6 +114,16 @@ if [ "$OPENSTACK_VIP" != "none" ]; then
     openstack-config --set /etc/nova/nova.conf DEFAULT $ADMIN_AUTH_URL http://$CONTROLLER:6000/v2.0/
     openstack-config --set /etc/nova/nova.conf DEFAULT $OS_URL http://$CONTROLLER:9696/
     openstack-config --set /etc/nova/nova.conf DEFAULT sql_connection mysql://nova:nova@$CONTROLLER:33306/nova
+    openstack-config --set /etc/nova/nova.conf database idle_timeout 180
+    openstack-config --set /etc/nova/nova.conf database min_pool_size 5
+    openstack-config --set /etc/nova/nova.conf database max_pool_size 50
+    openstack-config --set /etc/nova/nova.conf database max_overflow None
+    openstack-config --set /etc/nova/nova.conf database retry_interval 5
+    openstack-config --set /etc/nova/nova.conf database max_retries -1
+    openstack-config --set /etc/nova/nova.conf database db_max_retries 3
+    openstack-config --set /etc/nova/nova.conf database db_retry_interval 1
+    openstack-config --set /etc/nova/nova.conf database connection_debug 10
+    openstack-config --set /etc/nova/nova.conf database pool_timeout 120
 fi
 
 for svc in openstack-nova-compute supervisor-vrouter; do

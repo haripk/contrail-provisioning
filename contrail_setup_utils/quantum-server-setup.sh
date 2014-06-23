@@ -97,8 +97,18 @@ openstack-config --set /etc/$net_svc_name/$net_svc_name.conf DEFAULT log_format 
 OPENSTACK_VIP=${OPENSTACK_VIP:-none}
 if [ "$OPENSTACK_VIP" != "none" ]; then
     # Openstack HA specific config
-    openstack-config --set /etc/$svc/$svc.conf DEFAULT rabbit_host $CONTROLLER
-    openstack-config --set /etc/$svc/$svc.conf DEFAULT rabbit_port 5673
+    openstack-config --set /etc/$net_svc_name/$net_svc_name.conf DEFAULT rabbit_host $CONTROLLER
+    openstack-config --set /etc/$net_svc_name/$net_svc_name.conf DEFAULT rabbit_port 5673
+    openstack-config --set /etc/$net_svc_name/$net_svc_name.conf database idle_timeout 180
+    openstack-config --set /etc/$net_svc_name/$net_svc_name.conf database min_pool_size 5
+    openstack-config --set /etc/$net_svc_name/$net_svc_name.conf database max_pool_size 50
+    openstack-config --set /etc/$net_svc_name/$net_svc_name.conf database max_overflow None
+    openstack-config --set /etc/$net_svc_name/$net_svc_name.conf database retry_interval 5
+    openstack-config --set /etc/$net_svc_name/$net_svc_name.conf database max_retries -1
+    openstack-config --set /etc/$net_svc_name/$net_svc_name.conf database db_max_retries 3
+    openstack-config --set /etc/$net_svc_name/$net_svc_name.conf database db_retry_interval 1
+    openstack-config --set /etc/$net_svc_name/$net_svc_name.conf database connection_debug 10
+    openstack-config --set /etc/$net_svc_name/$net_svc_name.conf database pool_timeout 120
 fi
 
 echo "======= Enabling the services ======"

@@ -109,6 +109,16 @@ for svc in cinder; do
         openstack-config --set /etc/$svc/$svc.conf keystone_authtoken auth_host $CONTROLLER
         openstack-config --set /etc/$svc/$svc.conf keystone_authtoken auth_port 5000
         openstack-config --set /etc/$svc/$svc.conf DEFAULT osapi_volume_listen_port 9776
+        openstack-config --set /etc/$svc/$svc.conf database idle_timeout 180
+        openstack-config --set /etc/$svc/$svc.conf database min_pool_size 5
+        openstack-config --set /etc/$svc/$svc.conf database max_pool_size 50
+        openstack-config --set /etc/$svc/$svc.conf database max_overflow None
+        openstack-config --set /etc/$svc/$svc.conf database retry_interval 5
+        openstack-config --set /etc/$svc/$svc.conf database max_retries -1
+        openstack-config --set /etc/$svc/$svc.conf database db_max_retries 3
+        openstack-config --set /etc/$svc/$svc.conf database db_retry_interval 1
+        openstack-config --set /etc/$svc/$svc.conf database connection_debug 10
+        openstack-config --set /etc/$svc/$svc.conf database pool_timeout 120
     fi
 done
 

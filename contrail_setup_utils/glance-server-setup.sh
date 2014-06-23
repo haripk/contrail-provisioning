@@ -118,6 +118,16 @@ for cfg in api registry; do
     if [ "$OPENSTACK_VIP" != "none" ]; then
         openstack-config --set /etc/glance/glance-$cfg.conf keystone_authtoken auth_host $CONTROLLER
         openstack-config --set /etc/glance/glance-$cfg.conf keystone_authtoken auth_port 5000
+        openstack-config --set /etc/glance/glance-$cfg.conf database idle_timeout 180
+        openstack-config --set /etc/glance/glance-$cfg.conf database min_pool_size 5
+        openstack-config --set /etc/glance/glance-$cfg.conf database max_pool_size 50
+        openstack-config --set /etc/glance/glance-$cfg.conf database max_overflow None
+        openstack-config --set /etc/glance/glance-$cfg.conf database retry_interval 5
+        openstack-config --set /etc/glance/glance-$cfg.conf database max_retries -1
+        openstack-config --set /etc/glance/glance-$cfg.conf database db_max_retries 3
+        openstack-config --set /etc/glance/glance-$cfg.conf database db_retry_interval 1
+        openstack-config --set /etc/glance/glance-$cfg.conf database connection_debug 10
+        openstack-config --set /etc/glance/glance-$cfg.conf database pool_timeout 120
     fi
 done
 if [ "$OPENSTACK_VIP" != "none" ]; then
@@ -126,8 +136,6 @@ if [ "$OPENSTACK_VIP" != "none" ]; then
     openstack-config --set /etc/glance/glance-api.conf DEFAULT rabbit_host $CONTROLLER
     openstack-config --set /etc/glance/glance-api.conf DEFAULT rabbit_port 5673
     openstack-config --set /etc/glance/glance-api.conf DEFAULT swift_store_auth_address $CONTROLLER:5000/v2.0/
-    openstack-config --set /etc/glance/glance-api.conf DEFAULT known_stores glance.store.filesystem.Store,glance.store.rbd.Store,glance.store.swift.Store,glance.store.cinder.Store
-fi
 
 echo "======= Enabling the services ======"
 
