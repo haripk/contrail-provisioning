@@ -136,6 +136,7 @@ if [ "$OPENSTACK_VIP" != "none" ]; then
     openstack-config --set /etc/glance/glance-api.conf DEFAULT rabbit_host $CONTROLLER
     openstack-config --set /etc/glance/glance-api.conf DEFAULT rabbit_port 5673
     openstack-config --set /etc/glance/glance-api.conf DEFAULT swift_store_auth_address $CONTROLLER:5000/v2.0/
+fi
 
 echo "======= Enabling the services ======"
 
