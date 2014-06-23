@@ -137,7 +137,7 @@ class CreateInstaller(object):
                           'reset-vnc-database.py',
                           'setup-vnc-openstack.py',
                           'setup-vnc-galera.py',
-                          'contrail_setup_utils/bootstrap_galera.sh',
+                          'contrail_setup_utils/contrail-bootstrap-galera.sh',
                           'setup-vnc-keepalived.py',
                           'setup-vnc-storage.py',
                           'setup-vnc-interfaces.py',

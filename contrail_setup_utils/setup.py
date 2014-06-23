@@ -1900,7 +1900,7 @@ class OpenstackGaleraSetup(Setup):
 
     def run_services(self):
         if self._args.openstack_index == 1:
-            local("service %s restart" % self.mysql_svc)
+            local("service %s start wsrep_cluster_address=gcomm://" % self.mysql_svc)
         else:
             # Wait for the first galera node to create new cluster.
             time.sleep(5)
