@@ -100,7 +100,7 @@ if [ "$OPENSTACK_VIP" != "none" ]; then
     openstack-config --set /etc/nova/nova.conf database idle_timeout 180
     openstack-config --set /etc/nova/nova.conf database min_pool_size 5
     openstack-config --set /etc/nova/nova.conf database max_pool_size 50
-    openstack-config --set /etc/nova/nova.conf database max_overflow None
+    openstack-config --set /etc/nova/nova.conf database max_overflow 20
     openstack-config --set /etc/nova/nova.conf database retry_interval 5
     openstack-config --set /etc/nova/nova.conf database max_retries -1
     openstack-config --set /etc/nova/nova.conf database db_max_retries 3
