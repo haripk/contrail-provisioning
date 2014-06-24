@@ -1771,6 +1771,7 @@ class OpenstackGaleraSetup(Setup):
         local('sed -i -e "s/myisam-recover/#myisam-recover/" %s' % self.mysql_conf)
         if self._args.openstack_index == 1:
             local('sed -ibak "s#\#wsrep_cluster_address=.*#wsrep_cluster_address=gcomm://#g" %s' % (wsrep_conf))
+            local('sed -ibak "s#wsrep_cluster_address=.*#wsrep_cluster_address=gcomm://#g" %s' % (wsrep_conf))
         else:
             local('sed -ibak "s#\#wsrep_cluster_address=.*#wsrep_cluster_address=gcomm://%s:4567#g" %s' %
                   (':4567,'.join(self._args.galera_ip_list), wsrep_conf))
@@ -1866,7 +1867,7 @@ class OpenstackGaleraSetup(Setup):
 
     def run_services(self):
         if self._args.openstack_index == 1:
-            local("service %s start wsrep_cluster_address=gcomm://" % self.mysql_svc)
+            local("service %s restart" % self.mysql_svc)
         else:
             # Wait for the first galera node to create new cluster.
             time.sleep(5)
