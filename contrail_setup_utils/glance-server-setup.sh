@@ -119,9 +119,9 @@ for cfg in api registry; do
         openstack-config --set /etc/glance/glance-$cfg.conf keystone_authtoken auth_host $CONTROLLER
         openstack-config --set /etc/glance/glance-$cfg.conf keystone_authtoken auth_port 5000
         openstack-config --set /etc/glance/glance-$cfg.conf database idle_timeout 180
-        openstack-config --set /etc/glance/glance-$cfg.conf database min_pool_size 5
-        openstack-config --set /etc/glance/glance-$cfg.conf database max_pool_size 50
-        openstack-config --set /etc/glance/glance-$cfg.conf database max_overflow None
+        openstack-config --set /etc/glance/glance-$cfg.conf database min_pool_size 100
+        openstack-config --set /etc/glance/glance-$cfg.conf database max_pool_size 700
+        openstack-config --set /etc/glance/glance-$cfg.conf database max_overflow 100
         openstack-config --set /etc/glance/glance-$cfg.conf database retry_interval 5
         openstack-config --set /etc/glance/glance-$cfg.conf database max_retries -1
         openstack-config --set /etc/glance/glance-$cfg.conf database db_max_retries 3
