@@ -155,6 +155,16 @@ if [ "$OPENSTACK_VIP" != "none" ]; then
     openstack-config --set /etc/keystone/keystone.conf sql connection mysql://keystone:keystone@$CONTROLLER:33306/keystone
     openstack-config --set /etc/keystone/keystone.conf token driver keystone.token.backends.sql.Token
     openstack-config --del /etc/keystone/keystone.conf memcache servers
+    openstack-config --set /etc/nova/nova.conf database idle_timeout 180
+    openstack-config --set /etc/nova/nova.conf database min_pool_size 100
+    openstack-config --set /etc/nova/nova.conf database max_pool_size 700
+    openstack-config --set /etc/nova/nova.conf database max_overflow 100
+    openstack-config --set /etc/nova/nova.conf database retry_interval 5
+    openstack-config --set /etc/nova/nova.conf database max_retries -1
+    openstack-config --set /etc/nova/nova.conf database db_max_retries 3
+    openstack-config --set /etc/nova/nova.conf database db_retry_interval 1
+    openstack-config --set /etc/nova/nova.conf database connection_debug 10
+    openstack-config --set /etc/nova/nova.conf database pool_timeout 120
 fi
 
 # Increase memcached 'item_size_max' to 2MB, default is 1MB
