@@ -1776,6 +1776,7 @@ class KeepalivedSetup(Setup):
 
 class OpenstackGaleraSetup(Setup):
     def fixup_config_files(self):
+        local("echo %s >> /etc/contrail/galeraid" % self._args.openstack_index)
         pdist = platform.dist()[0]
         if pdist in ['Ubuntu']:
             local("ln -sf /bin/true /sbin/chkconfig")
