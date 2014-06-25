@@ -97,6 +97,10 @@ if [ "$OPENSTACK_VIP" != "none" ]; then
     openstack-config --set /etc/nova/nova.conf DEFAULT $ADMIN_AUTH_URL http://$CONTROLLER:5000/v2.0/
     openstack-config --set /etc/nova/nova.conf DEFAULT $OS_URL http://$CONTROLLER:9696/
     openstack-config --set /etc/nova/nova.conf DEFAULT sql_connection mysql://nova:nova@$CONTROLLER:33306/nova
+    openstack-config --set /etc/nova/nova.conf DEFAULT rabbit_retry_interval 1
+    openstack-config --set /etc/nova/nova.conf DEFAULT rabbit_retry_backoff 2
+    openstack-config --set /etc/nova/nova.conf DEFAULT rabbit_max_retries 0
+    openstack-config --set /etc/nova/nova.conf DEFAULT rabbit_ha_queues True
 fi
 
 for svc in openstack-nova-compute supervisor-vrouter; do

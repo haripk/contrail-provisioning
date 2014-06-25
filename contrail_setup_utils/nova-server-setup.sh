@@ -195,6 +195,10 @@ if [ "$OPENSTACK_VIP" != "none" ]; then
     openstack-config --set /etc/nova/nova.conf DEFAULT osapi_compute_listen_port 9774
     openstack-config --set /etc/nova/nova.conf DEFAULT metadata_listen_port 9775
     openstack-config --set /etc/nova/nova.conf DEFAULT metadata_port 9775
+    openstack-config --set /etc/nova/nova.conf DEFAULT rabbit_retry_interval 1
+    openstack-config --set /etc/nova/nova.conf DEFAULT rabbit_retry_backoff 2
+    openstack-config --set /etc/nova/nova.conf DEFAULT rabbit_max_retries 0
+    openstack-config --set /etc/nova/nova.conf DEFAULT rabbit_ha_queues True
     openstack-config --set /etc/nova/nova.conf keystone_authtoken auth_host $CONTROLLER
     openstack-config --set /etc/nova/nova.conf keystone_authtoken auth_port 5000
     openstack-config --set /etc/nova/nova.conf DEFAULT rabbit_host $CONTROLLER
