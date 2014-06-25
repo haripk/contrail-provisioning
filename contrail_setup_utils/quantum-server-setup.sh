@@ -99,6 +99,10 @@ if [ "$OPENSTACK_VIP" != "none" ]; then
     # Openstack HA specific config
     openstack-config --set /etc/$net_svc_name/$net_svc_name.conf DEFAULT rabbit_host $CONTROLLER
     openstack-config --set /etc/$net_svc_name/$net_svc_name.conf DEFAULT rabbit_port 5673
+    openstack-config --set /etc/$net_svc_name/$net_svc_name.conf DEFAULT rabbit_retry_interval 1
+    openstack-config --set /etc/$net_svc_name/$net_svc_name.conf DEFAULT rabbit_retry_backoff 2
+    openstack-config --set /etc/$net_svc_name/$net_svc_name.conf DEFAULT rabbit_max_retries 0
+    openstack-config --set /etc/$net_svc_name/$net_svc_name.conf DEFAULT rabbit_ha_queues True
 fi
 
 echo "======= Enabling the services ======"

@@ -1799,6 +1799,7 @@ class OpenstackGaleraSetup(Setup):
 
         # fixup wsrep config
         local('sed -i -e "s/bind-address/#bind-address/" %s' % self.mysql_conf)
+        local('sed -ibak "s/max_connections=.*/max_connections=10000/" %s' % self.mysql_conf)
         local('sed -i -e "s/key_buffer/#key_buffer/" %s' % self.mysql_conf)
         local('sed -i -e "s/max_allowed_packet/#max_allowed_packet/" %s' % self.mysql_conf)
         local('sed -i -e "s/thread_stack/#thread_stack/" %s' % self.mysql_conf)
