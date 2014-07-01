@@ -89,7 +89,7 @@ openstack-config --set /etc/nova/nova.conf DEFAULT firewall_driver nova.virt.fir
 # Openstack HA specific configs
 OPENSTACK_VIP=${OPENSTACK_VIP:-none}
 if [ "$OPENSTACK_VIP" != "none" ]; then
-    openstack-config --set /etc/nova/nova.conf DEFAULT glance_port 9393
+    openstack-config --set /etc/nova/nova.conf DEFAULT glance_port 9292
     openstack-config --set /etc/nova/nova.conf keystone_authtoken auth_host $CONTROLLER
     openstack-config --set /etc/nova/nova.conf keystone_authtoken auth_port 5000
     openstack-config --set /etc/nova/nova.conf DEFAULT rabbit_host $CONTROLLER
