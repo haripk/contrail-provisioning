@@ -1124,7 +1124,7 @@ HWADDR=%s
                              '__contrail_cacertfile_location__': '/etc/contrail/ssl/certs/ca.pem',
                              '__contrail_multi_tenancy__': self._args.multi_tenancy,
                              '__contrail_keystone_ip__': keystone_ip,
-                             '__rabbit_server_ip__': rabbit_host,
+                             '__rabbit_server_ip__': self._args.openstack_vi or rabbit_host,
                              '__rabbit_server_port__': rabbit_port,
                              '__contrail_admin_user__': ks_admin_user,
                              '__contrail_admin_password__': ks_admin_password,
@@ -1136,7 +1136,7 @@ HWADDR=%s
                              '__contrail_memcached_opt__': 'memcache_servers=127.0.0.1:11211' if self._args.multi_tenancy else '',
                              '__contrail_log_file__': '/var/log/contrail/api.log',
                              '__contrail_cassandra_server_list__' : ' '.join('%s:%s' % cassandra_server for cassandra_server in cassandra_server_list),
-                             '__contrail_disc_server_ip__': cfgm_ip,
+                             '__contrail_disc_server_ip__': self._args.openstack_vip or cfgm_ip,
                              '__contrail_disc_server_port__': '5998',
                              '__contrail_zookeeper_server_ip__': zk_servers_ports,
                             }
@@ -1197,7 +1197,7 @@ HWADDR=%s
                              '__contrail_ifmap_server_port__': '8444' if use_certs else '8443',
                              '__contrail_ifmap_username__': 'schema-transformer',
                              '__contrail_ifmap_password__': 'schema-transformer',
-                             '__contrail_api_server_ip__': cfgm_ip,
+                             '__contrail_api_server_ip__': self._args.openstack_vip or cfgm_ip,
                              '__contrail_api_server_port__': '8082',
                              '__contrail_zookeeper_server_ip__': zk_servers_ports,
                              '__contrail_use_certs__': use_certs,
@@ -1210,7 +1210,7 @@ HWADDR=%s
                              '__contrail_admin_token__': ks_admin_token,
                              '__contrail_log_file__' : '/var/log/contrail/schema.log',
                              '__contrail_cassandra_server_list__' : ' '.join('%s:%s' % cassandra_server for cassandra_server in cassandra_server_list),
-                             '__contrail_disc_server_ip__': cfgm_ip,
+                             '__contrail_disc_server_ip__': self._args.openstack_vip or cfgm_ip,
                              '__contrail_disc_server_port__': '5998',
                             }
             self._template_substitute_write(schema_transformer_conf_template.template,
@@ -1222,7 +1222,7 @@ HWADDR=%s
                              '__contrail_ifmap_server_port__': '8444' if use_certs else '8443',
                              '__contrail_ifmap_username__': 'svc-monitor',
                              '__contrail_ifmap_password__': 'svc-monitor',
-                             '__contrail_api_server_ip__': cfgm_ip,
+                             '__contrail_api_server_ip__': self._args.openstack_vip or cfgm_ip,
                              '__contrail_api_server_port__': '8082',
                              '__contrail_keystone_ip__': keystone_ip,
                              '__contrail_zookeeper_server_ip__': zk_servers_ports,
@@ -1236,7 +1236,7 @@ HWADDR=%s
                              '__contrail_admin_token__': ks_admin_token,
                              '__contrail_log_file__' : '/var/log/contrail/svc-monitor.log',
                              '__contrail_cassandra_server_list__' : ' '.join('%s:%s' % cassandra_server for cassandra_server in cassandra_server_list),
-                             '__contrail_disc_server_ip__': cfgm_ip,
+                             '__contrail_disc_server_ip__': self._args.openstack_vip or cfgm_ip,
                              '__contrail_disc_server_port__': '5998',
                              '__contrail_region_name__': region_name,
                             }
@@ -1799,7 +1799,7 @@ class OpenstackGaleraSetup(Setup):
 
         # fixup wsrep config
         local('sed -i -e "s/bind-address/#bind-address/" %s' % self.mysql_conf)
-        local('sed -ibak "s/max_connections=.*/max_connections=10000/" %s' % self.mysql_conf)
+        local('sed -ibak "s/max_connections.*/max_connections=10000/" %s' % self.mysql_conf)
         local('sed -i -e "s/key_buffer/#key_buffer/" %s' % self.mysql_conf)
         local('sed -i -e "s/max_allowed_packet/#max_allowed_packet/" %s' % self.mysql_conf)
         local('sed -i -e "s/thread_stack/#thread_stack/" %s' % self.mysql_conf)
