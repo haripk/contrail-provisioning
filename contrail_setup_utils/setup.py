@@ -1124,7 +1124,7 @@ HWADDR=%s
                              '__contrail_cacertfile_location__': '/etc/contrail/ssl/certs/ca.pem',
                              '__contrail_multi_tenancy__': self._args.multi_tenancy,
                              '__contrail_keystone_ip__': keystone_ip,
-                             '__rabbit_server_ip__': self._args.openstack_vi or rabbit_host,
+                             '__rabbit_server_ip__': self._args.openstack_vip or rabbit_host,
                              '__rabbit_server_port__': rabbit_port,
                              '__contrail_admin_user__': ks_admin_user,
                              '__contrail_admin_password__': ks_admin_password,
