@@ -23,7 +23,6 @@ if [ -f /etc/redhat-release ]; then
    is_ubuntu=0
    web_svc=httpd
    mysql_svc=mysqld
-   glance_pfx=openstack-glance
 fi
 
 if [ -f /etc/lsb-release ] && egrep -q 'DISTRIB_ID.*Ubuntu' /etc/lsb-release; then
@@ -31,7 +30,6 @@ if [ -f /etc/lsb-release ] && egrep -q 'DISTRIB_ID.*Ubuntu' /etc/lsb-release; th
    is_redhat=0
    web_svc=apache2
    mysql_svc=mysql
-   glance_pfx=glance
 fi
 
 function error_exit
@@ -144,8 +142,8 @@ for svc in rabbitmq-server $web_svc memcached; do
     chkconfig $svc on
 done
 
-for svc in api registry; do
-    chkconfig $glance_pfx-$svc on
+for svc in supervisor-glance; do
+    chkconfig $svc on
 done
 
 echo "======= Starting the services ======"
@@ -154,6 +152,6 @@ for svc in rabbitmq-server $web_svc memcached; do
     service $svc restart
 done
 
-for svc in api registry; do
-    service $glance_pfx-$svc restart
+for svc in supervisor-glance; do
+    service $svc restart
 done

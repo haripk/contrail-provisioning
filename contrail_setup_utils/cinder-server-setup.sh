@@ -23,7 +23,6 @@ if [ -f /etc/redhat-release ]; then
    is_ubuntu=0
    web_svc=httpd
    mysql_svc=mysqld
-   cinder_pfx=openstack-cinder
 fi
 
 if [ -f /etc/lsb-release ] && egrep -q 'DISTRIB_ID.*Ubuntu' /etc/lsb-release; then
@@ -31,7 +30,6 @@ if [ -f /etc/lsb-release ] && egrep -q 'DISTRIB_ID.*Ubuntu' /etc/lsb-release; th
    is_redhat=0
    web_svc=apache2
    mysql_svc=mysql
-   cinder_pfx=cinder
 fi
 
 function error_exit
@@ -128,8 +126,8 @@ for svc in rabbitmq-server $web_svc memcached; do
     chkconfig $svc on
 done
 
-for svc in api scheduler; do
-    chkconfig $cinder_pfx-$svc on
+for svc in supervisor-cinder; do
+    chkconfig $svc on
 done
 
 echo "======= Starting the services ======"
@@ -138,7 +136,7 @@ for svc in rabbitmq-server $web_svc memcached; do
     service $svc restart
 done
 
-for svc in api scheduler; do
-    service $cinder_pfx-$svc restart
+for svc in supervisor-cinder; do
+    service $svc restart
 done
 

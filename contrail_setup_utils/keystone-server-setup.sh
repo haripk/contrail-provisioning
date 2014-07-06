@@ -8,7 +8,6 @@ if [ -f /etc/redhat-release ]; then
    is_ubuntu=0
    web_svc=httpd
    mysql_svc=mysqld
-   keystone_svc=openstack-keystone
 fi
 
 if [ -f /etc/lsb-release ] && egrep -q 'DISTRIB_ID.*Ubuntu' /etc/lsb-release; then
@@ -16,7 +15,6 @@ if [ -f /etc/lsb-release ] && egrep -q 'DISTRIB_ID.*Ubuntu' /etc/lsb-release; th
    is_redhat=0
    web_svc=apache2
    mysql_svc=mysql
-   keystone_svc=keystone
 fi
 
 function error_exit
@@ -68,12 +66,12 @@ SERVICE_PASSWORD=${SERVICE_TOKEN:-$(/opt/contrail/contrail_installer/contrail_se
 openstack-config --set /etc/keystone/keystone.conf DEFAULT admin_token $SERVICE_PASSWORD
 
 # Stop keystone if it is already running (to reload the new admin token)
-service $keystone_svc status >/dev/null 2>&1 &&
-service $keystone_svc stop
+service supervisor-keystone status >/dev/null 2>&1 &&
+service supervisor-keystone stop
 
 # Start and enable the Keystone service
-service $keystone_svc restart
-chkconfig $keystone_svc on
+service supervisor-keystone restart
+chkconfig supervisor-keystone on
 
 if [ ! -d /etc/keystone/ssl ]; then
     keystone-manage pki_setup --keystone-user keystone --keystone-group keystone
@@ -211,5 +209,5 @@ for svc in rabbitmq-server $web_svc memcached; do
     service $svc restart
 done
 
-service $keystone_svc restart
+service supervisor-keystone restart
 

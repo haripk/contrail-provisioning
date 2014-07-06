@@ -120,7 +120,7 @@ if [ "$OPENSTACK_VIP" != "none" ]; then
     openstack-config --set /etc/nova/nova.conf DEFAULT rabbit_ha_queues True
 fi
 
-for svc in openstack-nova-compute supervisor-vrouter; do
+for svc in supervisor-nova supervisor-vrouter; do
     chkconfig $svc on
 done
 

@@ -23,7 +23,6 @@ if [ -f /etc/redhat-release ]; then
    is_ubuntu=0
    web_svc=httpd
    mysql_svc=mysqld
-   nova_pfx=openstack-nova
    nova_api_ver=`rpm -q --qf  "%{VERSION}\n" openstack-nova-api`
    echo $nova_api_ver
    if [ "$nova_api_ver" == "2013.1" ]; then
@@ -52,7 +51,6 @@ if [ -f /etc/lsb-release ] && egrep -q 'DISTRIB_ID.*Ubuntu' /etc/lsb-release; th
    is_redhat=0
    web_svc=apache2
    mysql_svc=mysql
-   nova_pfx=nova
    nova_api_version=`dpkg -l | grep 'ii' | grep nova-api | awk '{print $3}'`
    echo $nova_api_version
    if [ "$nova_api_version" == "2:2013.1.3-0ubuntu1" ]; then
@@ -224,8 +222,8 @@ for svc in rabbitmq-server $web_svc memcached; do
     chkconfig $svc on
 done
 
-for svc in api objectstore scheduler cert consoleauth novncproxy conductor; do
-    chkconfig $nova_pfx-$svc on
+for svc in supervisor-nova; do
+    chkconfig $svc on
 done
 
 echo "======= Starting the services ======"
@@ -234,6 +232,6 @@ for svc in rabbitmq-server $web_svc memcached; do
     service $svc restart
 done
 
-for svc in api objectstore scheduler cert consoleauth novncproxy conductor; do
-    service $nova_pfx-$svc restart
+for svc in supervisor-nova; do
+    service $svc restart
 done
