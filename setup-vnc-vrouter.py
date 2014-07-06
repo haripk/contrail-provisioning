@@ -155,20 +155,11 @@ class SetupVncVrouter(object):
             default = 'http')
         parser.add_argument("--amqp_server_ip",
             help = "IP of the AMQP server to be used for openstack")
-<<<<<<< HEAD
-<<<<<<< HEAD
         parser.add_argument("--vmware", help = "The Vmware ESXI IP")
         parser.add_argument("--vmware_username", help = "The Vmware ESXI username")
         parser.add_argument("--vmware_passwd", help = "The Vmware ESXI password")
         parser.add_argument("--vmware_vmpg_vswitch", help = "The Vmware VMPG vswitch name")
-=======
         parser.add_argument("--openstack_vip", help = "VIP Address of openstack  nodes")
-
->>>>>>> Fix the compute server setup script to use OPENSTACK_VIP in nova.conf.
-=======
-        parser.add_argument("--openstack_vip", help = "VIP Address of openstack  nodes")
-
->>>>>>> a4da88eda016704103de25c14c5d3f15202662b1
 
         self._args = parser.parse_args(remaining_argv)
 
