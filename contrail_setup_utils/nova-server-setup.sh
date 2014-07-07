@@ -129,8 +129,10 @@ EOF
 
 OPENSTACK_INDEX=${OPENSTACK_INDEX:-0}
 OPENSTACK_VIP=${OPENSTACK_VIP:-none}
-# must set SQL connection before running nova-manage
-openstack-config --set /etc/nova/nova.conf DEFAULT sql_connection mysql://nova:nova@$CONTROLLER:33306/nova
+if [ "$OPENSTACK_VIP" != "none" ]; then
+    # must set SQL connection before running nova-manage
+    openstack-config --set /etc/nova/nova.conf DEFAULT sql_connection mysql://nova:nova@$CONTROLLER:33306/nova
+fi
 
 for APP in nova; do
     # Required only in first openstack node, as the mysql db is replicated using galera.

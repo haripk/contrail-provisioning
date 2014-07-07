@@ -828,7 +828,9 @@ HWADDR=%s
                 rabbit_conf = '/etc/rabbitmq/rabbitmq.config'
                 if not local('grep \"tcp_listeners.*0.0.0.0.*5672\" %s' % rabbit_conf).succeeded:
                     local('sudo echo "[" >> %s' % rabbit_conf)
-                    local('sudo echo "   {rabbit, [ {tcp_listeners, [{\\"0.0.0.0\\", 5672}]} ]" >> %s' % rabbit_conf)
+                    local('sudo echo "   {rabbit, [ {tcp_listeners, [{\\"0.0.0.0\\", 5672}]}," >> %s' % rabbit_conf)
+                    local('sudo echo "   {loopback_users, []}, >> %s' % rabbit_conf)
+                    local('sudo echo "   {log_levels,[{connection, info},{mirroring, info}]} ] >> %s' % rabbit_conf)
                     local('sudo echo "    }" >> %s' % rabbit_conf)
                     local('sudo echo "]." >> %s' % rabbit_conf)
 
